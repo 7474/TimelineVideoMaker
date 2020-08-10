@@ -1,0 +1,52 @@
+﻿<Window x:Class="TimelineVideoMakerWpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        xmlns:local="clr-namespace:TimelineVideoMakerWpf"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+
+    <StackPanel Orientation="Horizontal">
+        <StackPanel Orientation="Vertical">
+            <TextBox x:Name="twitterConsumerKey" Width="200"></TextBox>
+            <TextBox x:Name="twitterConsumerSecret" Width="200"></TextBox>
+            <Button x:Name="twitterAuthorize" Click="twitterAuthorize_ClickAsync">Authorize</Button>
+
+            <TextBox x:Name="twitterAuthorizeUri"  Width="200" IsReadOnly="True"></TextBox>
+            <Button x:Name="twitterOpenAuthorizeUrl" Click="twitterOpenAuthorizeUrl_Click">OpenAuthorizeUrl</Button>
+
+            <TextBox x:Name="twitterPinCode" Width="200"></TextBox>
+            <Button x:Name="twitterGetTokens" Click="twitterGetTokens_ClickAsync">GetTokens</Button>
+
+            <xctk:DateTimePicker x:Name="startDate"></xctk:DateTimePicker>
+            <xctk:TimeSpanUpDown x:Name="durationMinutes" Value="24:00:00"></xctk:TimeSpanUpDown>
+            <TextBox x:Name="twitterQuery" Text="#jcdug"></TextBox>
+            <Button x:Name="twitterGetItems" Click="twitterGetItems_Click">GetItems</Button>
+
+            <Button x:Name="saveTwitterItems" Click="saveTwitterItems_Click">Save</Button>
+            <Button x:Name="loadTwitterItems" Click="loadTwitterItems_Click">Load</Button>
+
+            <Button x:Name="makeVideo" Click="makeVideo_ClickAsync">MakeVideo</Button>
+        </StackPanel>
+        <ListView ItemsSource="{Binding ObTimelineItems}"
+              VirtualizingPanel.ScrollUnit="Pixel"
+              VirtualizingPanel.VirtualizationMode="Recycling"
+              VirtualizingPanel.IsVirtualizing="True">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <WebBrowser 
+                            Width="240" Height="160"
+                            local:BrowserBehavior.Html="{Binding HtmlDocument}" />
+                        <StackPanel Orientation="Vertical">
+                            <TextBlock Text="{Binding Status.User.Name}"></TextBlock>
+                            <TextBlock Text="{Binding Status.Text}"></TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </StackPanel>
+</Window>
