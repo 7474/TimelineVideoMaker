@@ -1,8 +1,10 @@
 ﻿using SharpDX.MediaFoundation;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -10,26 +12,50 @@ using TheArtOfDev.HtmlRenderer.WinForms;
 
 namespace TimelineVideoMaker.Timeline.WMF
 {
-    public class WMFVideoMaker : IDisposable, IVideoMaker
+    public class WMFVideoMaker : IDisposable, IVideoMaker, INotifyPropertyChanged
     {
-        private bool disposedValue;
-
         public WMFVideoMaker()
         {
             // XXX Startup/Shutdown はライフサイクルがこのオブジェクトとは違う。
+            // が、他所でWMF使うわけないので事実上問題はない。
             MediaManager.Startup();
             MediaFactory.Startup(MediaFactory.Version, 0);
         }
 
         // XXX To configurable
         private int videoWidth = 240;
-        private int videoHeight = 640;
+        // XXX 縦長にしてスクロールアウトしていかせたいね
+        private int videoHeight = 360;
         private int frameRate = 10;
         private long frameDuration => 10 * 1000 * 1000 / frameRate;
         private int bufferLength => (int)(videoWidth * videoHeight * 4);
         private int minDisplaySeconds = 5;
+        // リアルタイムな動画にするならフラグを立てる
         private bool realTimeline = false;
 
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public string ProgressStatus => $"{ProgressRate * 100}% ({ProgressCurrent}/{ProgressMax})";
+        public int ProgressMax { get; private set; }
+        public int ProgressCurrent { get; private set; }
+        public double ProgressRate => ProgressMax > 0 ? (double)ProgressCurrent / ProgressMax : 0.0;
+
+        private void updateStatus(int current, int max)
+        {
+            ProgressCurrent = current;
+            ProgressMax = max;
+
+            if (PropertyChanged != null)
+            {
+                foreach (var name in new List<string>()
+                {
+                    "ProgressStatus","ProgressMax","ProgressCurrent","ProgressRate"
+                })
+                {
+                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(name));
+                }
+            }
+        }
 
         public async Task ExportAsync(string filePath, DateTimeOffset start, IEnumerable<ITimelineItem> items)
         {
@@ -47,9 +73,12 @@ namespace TimelineVideoMaker.Timeline.WMF
                 long recordDuration = 0;
                 int i = 0;
                 ITimelineItem lastItem = new EmptyTimelineItem();
-                foreach (var item in items)
+                // XXX 最大を知るには一旦走査しないといけない。。。
+                var itemsList = items.ToList();
+                foreach (var item in itemsList)
                 {
-                    if (++i > 3) break;
+                    updateStatus(i, itemsList.Count);
+                    i++;
 
                     recordDuration = nextDuration(start, recordDuration, item);
                     writeItem(filePath, sinkWriter, streamIndex, prevRecordingDuration, recordDuration, i, lastItem);
@@ -58,6 +87,7 @@ namespace TimelineVideoMaker.Timeline.WMF
                     lastItem = item;
                 }
                 // 最後を書く
+                // XXX 長さ指定してそこまで伸ばすようにするなど正規化。
                 recordDuration = nextDuration(start, recordDuration, lastItem);
                 writeItem(filePath, sinkWriter, streamIndex, prevRecordingDuration, recordDuration, i, lastItem);
 
@@ -76,6 +106,7 @@ namespace TimelineVideoMaker.Timeline.WMF
             MediaFactory.CreateMediaType(typeOut);
             typeOut.Set(MediaTypeAttributeKeys.MajorType, MediaTypeGuids.Video);
             typeOut.Set(MediaTypeAttributeKeys.Subtype, VideoFormatGuids.H264);
+            // XXX こんなにビットレート要らん気がする。
             typeOut.Set(MediaTypeAttributeKeys.AvgBitrate, 1 * 1000 * 1000);
             typeOut.Set(MediaTypeAttributeKeys.InterlaceMode, (int)VideoInterlaceMode.Progressive);
             typeOut.Set(MediaTypeAttributeKeys.FrameSize, ((long)videoWidth << 32) | (long)videoHeight);
@@ -122,8 +153,8 @@ namespace TimelineVideoMaker.Timeline.WMF
             using (var sample = MediaFactory.CreateSample())
             {
                 // XXX Debug
-                itemImage.Save(filePath + $".{i}.jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
-                File.WriteAllText(filePath + $".{i}.html", item.HtmlDocument);
+                //itemImage.Save(filePath + $".{i}.jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
+                //File.WriteAllText(filePath + $".{i}.html", item.HtmlDocument);
 
                 int maxRef, currentRef;
                 var bufPointer = buffer.Lock(out maxRef, out currentRef);
@@ -167,6 +198,9 @@ namespace TimelineVideoMaker.Timeline.WMF
             return bitmap;
         }
 
+        #region IDisposable
+        private bool disposedValue;
+
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -196,5 +230,6 @@ namespace TimelineVideoMaker.Timeline.WMF
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+        #endregion
     }
 }

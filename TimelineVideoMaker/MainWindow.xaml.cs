@@ -1,13 +1,16 @@
-﻿using Microsoft.Win32;
+﻿using CoreTweet;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using TimelineVideoMaker.Timeline;
 using TimelineVideoMaker.Timeline.Twitter;
 using TimelineVideoMaker.Timeline.WMF;
+using TimelineVideoMakerWpf.ViewModel;
 
 namespace TimelineVideoMakerWpf
 {
@@ -20,17 +23,19 @@ namespace TimelineVideoMakerWpf
         private IVideoMaker videoMaker;
         private IList<ITimelineItem> timelineItems;
 
-        public ObservableCollection<ITimelineItem> ObTimelineItems { get; set; }
+        private MainViewModel viewModel;
+
 
         public MainWindow()
         {
+            // XXX VM作る気なかった。
+            var wmfVideoMaker = new WMFVideoMaker();
+            videoMaker = wmfVideoMaker;
             twitterTimeline = new TwitterTimeline();
-            videoMaker = new WMFVideoMaker();
 
-            ObTimelineItems = new ObservableCollection<ITimelineItem>();
+            viewModel = new MainViewModel(new ObservableCollection<ITimelineItem>(), wmfVideoMaker);
 
-            // XXX それでいいのか
-            DataContext = this;
+            DataContext = viewModel;
 
             InitializeComponent();
         }
@@ -80,10 +85,14 @@ namespace TimelineVideoMakerWpf
             if (sfd.ShowDialog() == true)
             {
                 //var start = getStartDatetime();
-                var start = timelineItems.Min(x => x.Timestamp).AddSeconds(-3);
+                var start = timelineItems.Min(x => x.Timestamp);
 
                 var file = sfd.FileName;
-                await videoMaker.ExportAsync(file, start, timelineItems);
+                new Task(async () =>
+                {
+                    // XXX これ実体が非同期じゃないので戻ってきたタスクをStart出来ない
+                    await videoMaker.ExportAsync(file, start, timelineItems);
+                }).Start();
             }
         }
 
@@ -108,11 +117,7 @@ namespace TimelineVideoMakerWpf
                     .Select(x => x as ITimelineItem)
                     .ToList();
 
-                ObTimelineItems.Clear();
-                foreach (var item in timelineItems)
-                {
-                    ObTimelineItems.Add(item);
-                }
+                viewModel.SetItems(timelineItems);
             }
         }
     }

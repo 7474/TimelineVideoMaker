@@ -29,6 +29,7 @@
             <Button x:Name="loadTwitterItems" Click="loadTwitterItems_Click">Load</Button>
 
             <Button x:Name="makeVideo" Click="makeVideo_ClickAsync">MakeVideo</Button>
+            <TextBlock Text="{Binding ProgressStatus, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"></TextBlock>
         </StackPanel>
         <ListView ItemsSource="{Binding ObTimelineItems}"
               VirtualizingPanel.ScrollUnit="Pixel"
