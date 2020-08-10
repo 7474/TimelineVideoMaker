@@ -75,6 +75,7 @@
     <Compile Include="Timeline\ITimeline.cs" />
     <Compile Include="Timeline\IVideoMaker.cs" />
     <Compile Include="Timeline\Twitter\TwitterTimeline.cs" />
+    <Compile Include="Timeline\WMF\EmptyTimelineItem.cs" />
     <Compile Include="Timeline\WMF\WMFVideoMaker.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
