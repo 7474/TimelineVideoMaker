@@ -10,9 +10,9 @@ using System.Windows;
 using TimelineVideoMaker.Timeline;
 using TimelineVideoMaker.Timeline.Twitter;
 using TimelineVideoMaker.Timeline.WMF;
-using TimelineVideoMakerWpf.ViewModel;
+using TimelineVideoMaker.ViewModel;
 
-namespace TimelineVideoMakerWpf
+namespace TimelineVideoMaker
 {
     /// <summary>
     /// MainWindow.xaml の相互作用ロジック

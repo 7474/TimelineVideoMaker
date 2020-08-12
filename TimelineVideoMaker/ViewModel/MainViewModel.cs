@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using TimelineVideoMaker.Timeline;
 using TimelineVideoMaker.Timeline.WMF;
 
-namespace TimelineVideoMakerWpf.ViewModel
+namespace TimelineVideoMaker.ViewModel
 {
     class MainViewModel : INotifyPropertyChanged
     {

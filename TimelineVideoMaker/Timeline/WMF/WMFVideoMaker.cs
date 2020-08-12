@@ -6,9 +6,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Media;
-using TheArtOfDev.HtmlRenderer.WinForms;
+using TimelineVideoMaker.Timeline.Renderer;
 
 namespace TimelineVideoMaker.Timeline.WMF
 {
@@ -31,7 +29,7 @@ namespace TimelineVideoMaker.Timeline.WMF
         private int bufferLength => (int)(videoWidth * videoHeight * 4);
         private int minDisplaySeconds = 5;
         // リアルタイムな動画にするならフラグを立てる
-        private bool realTimeline = false;
+        private bool realTimeline = true;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -39,6 +37,9 @@ namespace TimelineVideoMaker.Timeline.WMF
         public int ProgressMax { get; private set; }
         public int ProgressCurrent { get; private set; }
         public double ProgressRate => ProgressMax > 0 ? (double)ProgressCurrent / ProgressMax : 0.0;
+
+        private IRenderer renderer = new SyncfusionRdnderer();
+        //private IRenderer renderer = new HtmlRendererRenderer();
 
         private void updateStatus(int current, int max)
         {
@@ -77,8 +78,8 @@ namespace TimelineVideoMaker.Timeline.WMF
                 var itemsList = items.ToList();
                 foreach (var item in itemsList)
                 {
-                    updateStatus(i, itemsList.Count);
                     i++;
+                    updateStatus(i, itemsList.Count);
 
                     recordDuration = nextDuration(start, recordDuration, item);
                     writeItem(filePath, sinkWriter, streamIndex, prevRecordingDuration, recordDuration, i, lastItem);
@@ -89,7 +90,7 @@ namespace TimelineVideoMaker.Timeline.WMF
                 // 最後を書く
                 // XXX 長さ指定してそこまで伸ばすようにするなど正規化。
                 recordDuration = nextDuration(start, recordDuration, lastItem);
-                writeItem(filePath, sinkWriter, streamIndex, prevRecordingDuration, recordDuration, i, lastItem);
+                writeItem(filePath, sinkWriter, streamIndex, prevRecordingDuration, recordDuration, ++i, lastItem);
 
                 sinkWriter.Finalize();
             }
@@ -153,8 +154,8 @@ namespace TimelineVideoMaker.Timeline.WMF
             using (var sample = MediaFactory.CreateSample())
             {
                 // XXX Debug
-                //itemImage.Save(filePath + $".{i}.jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
-                //File.WriteAllText(filePath + $".{i}.html", item.HtmlDocument);
+                itemImage.Save(filePath + $".{i}.jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
+                File.WriteAllText(filePath + $".{i}.html", item.HtmlDocument);
 
                 int maxRef, currentRef;
                 var bufPointer = buffer.Lock(out maxRef, out currentRef);
@@ -186,16 +187,8 @@ namespace TimelineVideoMaker.Timeline.WMF
             // XXX 今のところビデオのフレームと合わせておく
             //var h = w / 2;
             var h = videoHeight;
-            var bitmap = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
-            using (var g = Graphics.FromImage(bitmap))
-            {
-                // XXX 高さどう取るの？
-                // XXX フォント読まれてない？
-                HtmlRender.Render(g, item.HtmlDocument, 0, 0, w);
-                //g.DrawString(item.HtmlDocument, font, System.Drawing.Brushes.Black, 4f, 4f);
-            }
 
-            return bitmap;
+            return renderer.RenderImage(item, w, h);
         }
 
         #region IDisposable

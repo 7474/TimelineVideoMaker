@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 
-namespace TimelineVideoMakerWpf
+namespace TimelineVideoMaker
 {
     public static class BrowserBehavior
     {
